@@ -51,15 +51,15 @@ def update(frame):
 # 애니메이션 생성
 ani = FuncAnimation(fig, update, frames=len(t), interval=50, blit=True)
 
-# 애니메이션을 MP4로 변환하여 Streamlit에 표시
+# 애니메이션을 GIF로 변환하여 Streamlit에 표시
 def get_animation_html(ani):
     buf = io.BytesIO()
     try:
-        ani.save(buf, format='mp4', writer='ffmpeg', fps=20, codec='libx264')
+        ani.save(buf, format='gif', writer='pillow', fps=20)
         buf.seek(0)
         video = buf.getvalue()
         video_base64 = base64.b64encode(video).decode()
-        return f'<video width="600" controls><source src="data:video/mp4;base64,{video_base64}" type="video/mp4"></video>'
+        return f'<img src="data:image/gif;base64,{video_base64}" width="600"/>'
     except Exception as e:
         st.error(f"애니메이션 저장 중 오류 발생: {str(e)}")
         return None
@@ -69,6 +69,6 @@ html = get_animation_html(ani)
 if html:
     st.markdown(html, unsafe_allow_html=True)
 else:
-    st.write("애니메이션을 생성할 수 없습니다. ffmpeg이 설치되어 있는지 확인하세요.")
+    st.write("애니메이션을 생성할 수 없습니다. pillow>=9.0.0이 설치되어 있는지 확인하세요.")
 
 plt.close(fig)
