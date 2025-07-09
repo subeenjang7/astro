@@ -2,8 +2,9 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
-import io
+import tempfile
 import base64
+import os
 
 # Streamlit 앱 제목
 st.title("케플러 법칙에 따른 행성 운동 시뮬레이션")
@@ -51,15 +52,23 @@ def update(frame):
 # 애니메이션 생성
 ani = FuncAnimation(fig, update, frames=len(t), interval=50, blit=True)
 
-# 애니메이션을 GIF로 변환하여 Streamlit에 표시
+# 애니메이션을 GIF로 저장하고 Streamlit에 표시
 def get_animation_html(ani):
-    buf = io.BytesIO()
     try:
-        writer = PillowWriter(fps=20)
-        ani.save(buf, writer=writer)
-        buf.seek(0)
-        video = buf.getvalue()
+        # 임시 파일 생성
+        with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as tmp_file:
+            tmp_path = tmp_file.name
+            writer = PillowWriter(fps=20)
+            ani.save(tmp_path, writer=writer)
+        
+        # 임시 파일 읽기
+        with open(tmp_path, 'rb') as f:
+            video = f.read()
         video_base64 = base64.b64encode(video).decode()
+        
+        # 임시 파일 삭제
+        os.remove(tmp_path)
+        
         return f'<img src="data:image/gif;base64,{video_base64}" width="600"/>'
     except Exception as e:
         st.error(f"애니메이션 저장 중 오류 발생: {str(e)}")
