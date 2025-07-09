@@ -1,6 +1,4 @@
-import stream
-
-lit as st
+import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
