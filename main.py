@@ -6,6 +6,10 @@ import tempfile
 import base64
 import os
 
+# 한글 폰트 설정 (Matplotlib에서 한글 지원)
+plt.rcParams['font.family'] = 'NanumGothic'  # Ubuntu/Streamlit Cloud에서 사용 가능한 폰트
+plt.rcParams['axes.unicode_minus'] = False  # 음수 부호 깨짐 방지
+
 # Streamlit 앱 제목
 st.title("케플러 법칙에 따른 행성 운동 시뮬레이션")
 
@@ -16,33 +20,35 @@ b = st.number_input("짧은반지름 (b)", min_value=0.1, max_value=a, value=0.5
 
 # 케플러 제2법칙을 위한 설정
 e = np.sqrt(1 - (b**2 / a**2))  # 이심률
-c = a * e  # 초점 거리
+c = a * e  # 초점 거리 (항성 위치)
 
-# 타원 궤도 계산
+# 타원 궤도 계산 (초점 (c, 0) 기준으로 이동)
 theta = np.linspace(0, 2 * np.pi, 100)
-x_orbit = a * np.cos(theta)
+x_orbit = c + a * e * np.cos(theta)  # 초점 이동 보정
 y_orbit = b * np.sin(theta)
 
-# 행성 운동 계산 (케플러 제2법칙)
+# 행성 운동 계산 (케플러 제2법칙, 극좌표 기반)
 def get_r(theta, a, e):
     return a * (1 - e**2) / (1 + e * np.cos(theta))
 
 t = np.linspace(0, 2 * np.pi, 100)
 r = get_r(t, a, e)
-x_planet = r * np.cos(t)
-y_planet = r * np.sin(t)
+x_planet = c + r * np.cos(t - np.arccos(e))  # 초점 이동 및 위상 보정
+y_planet = r * np.sin(t - np.arccos(e))
 
 # 애니메이션 생성
 fig, ax = plt.subplots(figsize=(6, 6))
 ax.set_aspect('equal')
 ax.plot(x_orbit, y_orbit, 'b-', label='타원 궤도')
-ax.plot([0], [0], 'yo', markersize=15, label='항성')
+ax.plot([c], [0], 'yo', markersize=15, label='항성')  # 초점 (c, 0) 위치
 planet, = ax.plot([], [], 'ro', markersize=10, label='행성')
 ax.legend()
 ax.set_xlabel('X (AU)')
 ax.set_ylabel('Y (AU)')
 ax.set_title('케플러 법칙에 따른 행성 운동')
 ax.grid(True)
+ax.set_xlim(-1.5*a, 1.5*a)
+ax.set_ylim(-1.5*b, 1.5*b)
 
 # 애니메이션 업데이트 함수
 def update(frame):
@@ -55,20 +61,16 @@ ani = FuncAnimation(fig, update, frames=len(t), interval=50, blit=True)
 # 애니메이션을 GIF로 저장하고 Streamlit에 표시
 def get_animation_html(ani):
     try:
-        # 임시 파일 생성
         with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as tmp_file:
             tmp_path = tmp_file.name
             writer = PillowWriter(fps=20)
             ani.save(tmp_path, writer=writer)
         
-        # 임시 파일 읽기
         with open(tmp_path, 'rb') as f:
             video = f.read()
         video_base64 = base64.b64encode(video).decode()
         
-        # 임시 파일 삭제
         os.remove(tmp_path)
-        
         return f'<img src="data:image/gif;base64,{video_base64}" width="600"/>'
     except Exception as e:
         st.error(f"애니메이션 저장 중 오류 발생: {str(e)}")
