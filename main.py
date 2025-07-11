@@ -6,9 +6,9 @@ import tempfile
 import base64
 import os
 
-# 한글 폰트 설정 (Matplotlib에서 한글 지원)
-plt.rcParams['font.family'] = 'NanumGothic'  # Ubuntu/Streamlit Cloud에서 사용 가능한 폰트
-plt.rcParams['axes.unicode_minus'] = False  # 음수 부호 깨짐 방지
+# 한글 폰트 설정
+plt.rcParams['font.family'] = 'NanumGothic'  # Streamlit Cloud에서 기본 제공
+plt.rcParams['axes.unicode_minus'] = False
 
 # Streamlit 앱 제목
 st.title("케플러 법칙에 따른 행성 운동 시뮬레이션")
@@ -22,25 +22,34 @@ b = st.number_input("짧은반지름 (b)", min_value=0.1, max_value=a, value=0.5
 e = np.sqrt(1 - (b**2 / a**2))  # 이심률
 c = a * e  # 초점 거리 (항성 위치)
 
-# 타원 궤도 계산 (초점 (c, 0) 기준으로 이동)
-theta = np.linspace(0, 2 * np.pi, 100)
-x_orbit = c + a * e * np.cos(theta)  # 초점 이동 보정
-y_orbit = b * np.sin(theta)
+# 타원 궤도 계산 (초점 (c, 0) 기준)
+theta_orbit = np.linspace(0, 2 * np.pi, 100)
+x_orbit = c + a * np.cos(theta_orbit) * (a / np.sqrt(a**2 - c**2))  # 타원 보정
+y_orbit = b * np.sin(theta_orbit)
 
-# 행성 운동 계산 (케플러 제2법칙, 극좌표 기반)
-def get_r(theta, a, e):
-    return a * (1 - e**2) / (1 + e * np.cos(theta))
+# 행성 운동 계산 (케플러 타원 궤도)
+def get_theta(t, e, M):
+    # 케플러 방정식 근사 (M = E - e * sin(E))
+    E = M
+    for _ in range(5):  # 뉴턴-랩슨 반복
+        E_new = E - (E - e * np.sin(E) - M) / (1 - e * np.cos(E))
+        if abs(E_new - E) < 1e-8:
+            break
+        E = E_new
+    return 2 * np.arctan(np.sqrt((1 + e) / (1 - e)) * np.tan(E / 2))
 
-t = np.linspace(0, 2 * np.pi, 100)
-r = get_r(t, a, e)
-x_planet = c + r * np.cos(t - np.arccos(e))  # 초점 이동 및 위상 보정
-y_planet = r * np.sin(t - np.arccos(e))
+t = np.linspace(0, 2 * np.pi, 100)  # 시간
+M = t  # 평균 이각 (단순화)
+theta_planet = np.array([get_theta(ti, e, Mi) for ti, Mi in zip(t, M)])
+r = a * (1 - e**2) / (1 + e * np.cos(theta_planet))
+x_planet = c + r * np.cos(theta_planet)
+y_planet = r * np.sin(theta_planet)
 
 # 애니메이션 생성
 fig, ax = plt.subplots(figsize=(6, 6))
 ax.set_aspect('equal')
 ax.plot(x_orbit, y_orbit, 'b-', label='타원 궤도')
-ax.plot([c], [0], 'yo', markersize=15, label='항성')  # 초점 (c, 0) 위치
+ax.plot([c], [0], 'yo', markersize=15, label='항성')
 planet, = ax.plot([], [], 'ro', markersize=10, label='행성')
 ax.legend()
 ax.set_xlabel('X (AU)')
