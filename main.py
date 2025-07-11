@@ -7,7 +7,7 @@ import base64
 import os
 import matplotlib as mpl
 
-# Use standard English font to avoid issues
+# Use standard English font
 mpl.rcParams['font.family'] = 'Arial'
 mpl.rcParams['axes.unicode_minus'] = False
 
@@ -22,12 +22,16 @@ b = st.number_input("Semi-minor axis b (AU)", min_value=0.1, max_value=a, value=
 e = np.sqrt(1 - (b**2 / a**2))
 c = a * e  # Distance from center to focus
 
-# Elliptical orbit centered, shifted so the star is at origin (focus)
+# 🧮 Kepler's 3rd law: T^2 ∝ a^3 → T = sqrt(a^3)
+T = np.sqrt(a**3)  # Orbital period in years
+st.write(f"🕒 Estimated Orbital Period (Kepler's 3rd Law): **{T:.2f} years**")
+
+# Elliptical orbit centered, shifted so star is at origin
 theta = np.linspace(0, 2 * np.pi, 1000)
 x_orbit = a * np.cos(theta) - c
 y_orbit = b * np.sin(theta)
 
-# Solve Kepler's Equation
+# Kepler's equation solver
 def solve_kepler(M, e):
     E = M
     for _ in range(10):
@@ -44,7 +48,7 @@ r = a * (1 - e**2) / (1 + e * np.cos(theta_planet))
 x_planet = r * np.cos(theta_planet)
 y_planet = r * np.sin(theta_planet)
 
-# Plotting
+# Plot
 fig, ax = plt.subplots(figsize=(6, 6))
 ax.set_aspect('equal')
 ax.plot(x_orbit, y_orbit, 'b-', label='Elliptical Orbit')
@@ -53,10 +57,14 @@ planet, = ax.plot([], [], 'ro', markersize=10, label='Planet')
 ax.legend()
 ax.set_xlabel('X (AU)')
 ax.set_ylabel('Y (AU)')
-ax.set_title("Planetary Motion (Focus at Origin)")
+ax.set_title("Planetary Motion with Kepler's Laws")
 ax.grid(True)
 
-# Automatically adjust limits so orbit fits in view
+# Show orbital period on plot
+ax.text(0.05, 0.95, f"Period ≈ {T:.2f} years", transform=ax.transAxes,
+        fontsize=12, color='black', verticalalignment='top', bbox=dict(facecolor='white', alpha=0.6))
+
+# Auto axis limits
 x_min = np.min(x_orbit) - 0.1 * a
 x_max = np.max(x_orbit) + 0.1 * a
 y_min = np.min(y_orbit) - 0.1 * b
@@ -64,14 +72,14 @@ y_max = np.max(y_orbit) + 0.1 * b
 ax.set_xlim(x_min, x_max)
 ax.set_ylim(y_min, y_max)
 
-# Animation update
+# Animation
 def update(frame):
     planet.set_data([x_planet[frame]], [y_planet[frame]])
     return planet,
 
 ani = FuncAnimation(fig, update, frames=len(t), interval=40, blit=True)
 
-# Display as GIF
+# GIF output
 def get_animation_html(ani):
     try:
         with tempfile.NamedTemporaryFile(suffix='.gif', delete=False) as tmp_file:
@@ -85,6 +93,7 @@ def get_animation_html(ani):
         st.error(f"Error saving animation: {str(e)}")
         return None
 
+# Display GIF in Streamlit
 html = get_animation_html(ani)
 if html:
     st.markdown(html, unsafe_allow_html=True)
