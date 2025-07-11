@@ -6,8 +6,8 @@ import tempfile
 import base64
 import os
 
-# 한글 폰트 설정
-plt.rcParams['font.family'] = 'NanumGothic'  # Streamlit Cloud에서 기본 제공
+# 한글 폰트 설정 (Streamlit Cloud와 호환)
+plt.rcParams['font.family'] = 'NanumGothic' if 'NanumGothic' in plt.rcParams['font.family'] else 'Arial'
 plt.rcParams['axes.unicode_minus'] = False
 
 # Streamlit 앱 제목
@@ -24,7 +24,7 @@ c = a * e  # 초점 거리 (항성 위치)
 
 # 타원 궤도 계산 (초점 (c, 0) 기준)
 theta_orbit = np.linspace(0, 2 * np.pi, 100)
-x_orbit = c + a * np.cos(theta_orbit) * (a / np.sqrt(a**2 - c**2))  # 타원 보정
+x_orbit = c + a * np.cos(theta_orbit)
 y_orbit = b * np.sin(theta_orbit)
 
 # 행성 운동 계산 (케플러 타원 궤도)
@@ -39,7 +39,7 @@ def get_theta(t, e, M):
     return 2 * np.arctan(np.sqrt((1 + e) / (1 - e)) * np.tan(E / 2))
 
 t = np.linspace(0, 2 * np.pi, 100)  # 시간
-M = t  # 평균 이각 (단순화)
+M = e * t  # 평균 이각 (시간에 비례)
 theta_planet = np.array([get_theta(ti, e, Mi) for ti, Mi in zip(t, M)])
 r = a * (1 - e**2) / (1 + e * np.cos(theta_planet))
 x_planet = c + r * np.cos(theta_planet)
